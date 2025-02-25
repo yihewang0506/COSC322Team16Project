@@ -94,7 +94,7 @@ public class COSC322Test extends GamePlayer{
 	
     	//For a detailed description of the message types and format, 
     	//see the method GamePlayer.handleGameMessage() in the game-client-api document. 
-    	
+    	//test
 		ArrayList<Integer> gameState = (ArrayList<Integer>) msgDetails.get("game-state");
 		if(gamegui != null){
 			gamegui.setGameState(gameState);
