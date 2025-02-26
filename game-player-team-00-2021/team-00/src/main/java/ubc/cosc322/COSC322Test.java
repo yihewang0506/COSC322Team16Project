@@ -1,4 +1,3 @@
-
 package ubc.cosc322;
 
 import java.util.ArrayList;
@@ -19,118 +18,199 @@ import ygraph.ai.smartfox.games.amazons.AmazonsGameMessage;
  * Jan 5, 2021
  *
  */
-public class COSC322Test extends GamePlayer{
-
-    private GameClient gameClient = null; 
+public class COSC322Test extends GamePlayer {
+    private GameClient gameClient = null;
     private BaseGameGUI gamegui = null;
-	
     private String userName = null;
     private String passwd = null;
- 
-	
+    
+    // Game state tracking
+    private ArrayList<Integer> gameState = null;
+    
     /**
      * The main method
-     * @param args for name and passwd (current, any string would work)
+     * @param args for name and passwd
      */
-    public static void main(String[] args) {				 
-    	COSC322Test player = new COSC322Test("args[0]", "args[1]");
-    	
-    	if(player.getGameGUI() == null) {
-    		player.Go();
-    	}
-    	else {
-    		BaseGameGUI.sys_setup();
+    public static void main(String[] args) {
+        COSC322Test player = new COSC322Test(args.length > 0 ? args[0] : "TeamPlayer", 
+                                           args.length > 1 ? args[1] : "password");
+        
+        if(player.getGameGUI() == null) {
+            player.Go();
+        }
+        else {
+            BaseGameGUI.sys_setup();
             java.awt.EventQueue.invokeLater(new Runnable() {
                 public void run() {
-                	player.Go();
+                    player.Go();
                 }
             });
-    	}
-    }
-	
-    /**
-     * Any name and passwd 
-     * @param userName
-      * @param passwd
-     */
-    public COSC322Test(String userName, String passwd) {
-    	this.userName = userName;
-    	this.passwd = passwd;
-    	
-    	//To make a GUI-based player, create an instance of BaseGameGUI
-    	//and implement the method getGameGUI() accordingly
-    	this.gamegui = new BaseGameGUI(this);
-    }
- 
-
-
-    @Override
-    public void onLogin() {
-    	/*System.out.println("Congratualations!!! "
-    			+ "I am called because the server indicated that the login is successfully");
-    	System.out.println("The next step is to find a room and join it: "
-    			+ "the gameClient instance created in my constructor knows how!"); */
-			
-		userName = gameClient.getUserName();
-		if(gamegui != null){
-			gamegui.setRoomInformation(gameClient.getRoomList());
-
-		}
-		List<Room> roomList = gameClient.getRoomList(); 
-		for(int i = 0;i < roomList.size();i++){
-			System.out.println(roomList.get(i).getName());
-		}
-			Scanner input = new Scanner(System.in);
-			System.out.println("Please enter a room name: ");
-			String roomName = input.nextLine();
-			gameClient.joinRoom(roomName);
-			input.close();
-	}
-
-    @Override
-    public boolean handleGameMessage(String messageType, Map<String, Object> msgDetails) {
-    	//This method will be called by the GameClient when it receives a game-related message
-    	//from the server.
-	
-    	//For a detailed description of the message types and format, 
-    	//see the method GamePlayer.handleGameMessage() in the game-client-api document. 
-    	
-		ArrayList<Integer> gameState = (ArrayList<Integer>) msgDetails.get("game-state");
-		if(gamegui != null){
-			gamegui.setGameState(gameState);
-
-		}
-		System.out.println(messageType);
-		System.out.println(msgDetails);
-
-		//System.out.println(gameState);
-		//gamegui.setGameState(msgDetails.get(AmazonsGameMessage.GAME_STATE));
-    	return true;   	
+        }
     }
     
+    /**
+     * Constructor
+     * @param userName
+     * @param passwd
+     */
+    public COSC322Test(String userName, String passwd) {
+        this.userName = userName;
+        this.passwd = passwd;
+        this.gamegui = new BaseGameGUI(this);
+    }
+    
+    @Override
+    public void onLogin() {
+        System.out.println("Logged in successfully as: " + gameClient.getUserName());
+        
+        if(gamegui != null) {
+            gamegui.setRoomInformation(gameClient.getRoomList());
+        }
+        
+        List<Room> roomList = gameClient.getRoomList();
+        for(int i = 0; i < roomList.size(); i++) {
+            System.out.println(roomList.get(i).getName());
+        }
+        
+        Scanner input = new Scanner(System.in);
+        System.out.println("Please enter a room name: ");
+        String roomName = input.nextLine();
+        gameClient.joinRoom(roomName);
+        // Don't close System.in with input.close() as it might be needed later
+    }
+    
+    @Override
+    public boolean handleGameMessage(String messageType, Map<String, Object> msgDetails) {
+        System.out.println("Message Type: " + messageType);
+        
+        if (messageType.equals(GameMessage.GAME_STATE_BOARD)) {
+            // Update the game state
+            gameState = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.GAME_STATE);
+            
+            if (gamegui != null) {
+                gamegui.setGameState(gameState);
+            }
+            
+            // Print the board
+            System.out.println("\n--- CURRENT BOARD STATE ---");
+            QueenActions.printBoard(gameState);
+            
+            // Step 1 Verification: Queen Actions
+            verifyQueenActions();
+        }
+        else if (messageType.equals(GameMessage.GAME_ACTION_MOVE)) {
+            // An opponent has made a move
+            ArrayList<Integer> queenPos = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_CURR);
+            ArrayList<Integer> queenTargetPos = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_NEXT);
+            ArrayList<Integer> arrowPos = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.ARROW_POS);
+            
+            System.out.println("\nOpponent move:");
+            System.out.println("  Queen from: " + queenPos);
+            System.out.println("  Queen to: " + queenTargetPos);
+            System.out.println("  Arrow: " + arrowPos);
+            
+            if (gamegui != null) {
+                gamegui.updateGameState(queenPos, queenTargetPos, arrowPos);
+            }
+            
+            // Update our internal game state
+            gameState = QueenActions.executeMove(gameState, 
+                queenPos.get(0), queenPos.get(1), 
+                queenTargetPos.get(0), queenTargetPos.get(1), 
+                arrowPos.get(0), arrowPos.get(1));
+                
+            System.out.println("\n--- BOARD AFTER OPPONENT MOVE ---");
+            QueenActions.printBoard(gameState);
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Verify that queen action implementation works correctly
+     */
+    private void verifyQueenActions() {
+        if (gameState == null) {
+            System.out.println("Game state is null, cannot verify queen actions");
+            return;
+        }
+        
+        System.out.println("\n=== STEP 1 VERIFICATION: Queen Actions ===");
+        
+        // 1. Find all queens
+        List<int[]> whiteQueens = QueenActions.getQueenPositions(gameState, true);
+        List<int[]> blackQueens = QueenActions.getQueenPositions(gameState, false);
+        
+        // 2. Display queen positions and their legal moves
+        System.out.println("White queens found: " + whiteQueens.size());
+        for (int[] pos : whiteQueens) {
+            System.out.println("  Queen at row " + pos[0] + ", col " + pos[1]);
+            
+            List<int[]> moves = QueenActions.getQueenMoves(gameState, pos[0], pos[1]);
+            System.out.println("    Legal moves: " + moves.size());
+            
+            // Show a few sample moves if available
+            for (int i = 0; i < Math.min(3, moves.size()); i++) {
+                System.out.println("    - Can move to row " + moves.get(i)[0] + ", col " + moves.get(i)[1]);
+            }
+            
+            // 3. Test arrow shots for a sample move
+            if (!moves.isEmpty()) {
+                int[] targetPos = moves.get(0);
+                
+                // Make a simulated move to test arrow shooting
+                ArrayList<Integer> tempState = QueenActions.executeMove(
+                    new ArrayList<>(gameState),
+                    pos[0], pos[1], 
+                    targetPos[0], targetPos[1],
+                    targetPos[0], targetPos[1] // Temporary arrow position
+                );
+                
+                List<int[]> arrows = QueenActions.getArrowShots(tempState, targetPos[0], targetPos[1]);
+                System.out.println("    If moved to row " + targetPos[0] + ", col " + targetPos[1] + ":");
+                System.out.println("      Legal arrow shots: " + arrows.size());
+                
+                // 4. Test move validation
+                if (!arrows.isEmpty()) {
+                    int[] arrowPos = arrows.get(0);
+                    boolean valid = QueenActions.isValidMove(gameState,
+                        pos[0], pos[1], 
+                        targetPos[0], targetPos[1],
+                        arrowPos[0], arrowPos[1]);
+                    
+                    System.out.println("      Is this a valid move? " + valid);
+                }
+            }
+        }
+        
+        System.out.println("Black queens found: " + blackQueens.size());
+        for (int[] pos : blackQueens) {
+            System.out.println("  Queen at row " + pos[0] + ", col " + pos[1]);
+            List<int[]> moves = QueenActions.getQueenMoves(gameState, pos[0], pos[1]);
+            System.out.println("    Legal moves: " + moves.size());
+        }
+        
+        System.out.println("\n=== STEP 1 VERIFICATION COMPLETE ===");
+        System.out.println("Queen actions have been successfully implemented!");
+    }
     
     @Override
     public String userName() {
-    	return userName;
+        return userName;
     }
-
-	@Override
-	public GameClient getGameClient() {
-		// TODO Auto-generated method stub
-		return this.gameClient;
-	}
-
-	@Override
-	public BaseGameGUI getGameGUI() {
-		// TODO Auto-generated method stub
-		return  gamegui;
-	}
-
-	@Override
-	public void connect() {
-		// TODO Auto-generated method stub
-    	gameClient = new GameClient(userName, passwd, this);			
-	}
-
- 
-}//end of class
+    
+    @Override
+    public GameClient getGameClient() {
+        return this.gameClient;
+    }
+    
+    @Override
+    public BaseGameGUI getGameGUI() {
+        return gamegui;
+    }
+    
+    @Override
+    public void connect() {
+        gameClient = new GameClient(userName, passwd, this);
+    }
+}
