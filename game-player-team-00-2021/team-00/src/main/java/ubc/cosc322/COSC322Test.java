@@ -2,11 +2,13 @@ package ubc.cosc322;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import sfs2x.client.entities.Room;
 import ygraph.ai.smartfox.games.BaseGameGUI;
+import ygraph.ai.smartfox.games.BoardGameModel;
 import ygraph.ai.smartfox.games.GameClient;
 import ygraph.ai.smartfox.games.GameMessage;
 import ygraph.ai.smartfox.games.GamePlayer;
@@ -57,6 +59,7 @@ public class COSC322Test extends GamePlayer {
         this.userName = userName;
         this.passwd = passwd;
         this.gamegui = new BaseGameGUI(this);
+        
     }
     
     @Override
@@ -75,26 +78,25 @@ public class COSC322Test extends GamePlayer {
         Scanner input = new Scanner(System.in);
         System.out.println("Please enter a room name: ");
         String roomName = input.nextLine();
+        
         gameClient.joinRoom(roomName);
         // Don't close System.in with input.close() as it might be needed later
+       
     }
     
     @Override
     public boolean handleGameMessage(String messageType, Map<String, Object> msgDetails) {
         System.out.println("Message Type: " + messageType);
-        
+
         if (messageType.equals(GameMessage.GAME_STATE_BOARD)) {
             // Update the game state
             gameState = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.GAME_STATE);
-            
             if (gamegui != null) {
                 gamegui.setGameState(gameState);
             }
-            
             // Print the board
             System.out.println("\n--- CURRENT BOARD STATE ---");
             QueenActions.printBoard(gameState);
-            
             // Step 1 Verification: Queen Actions
             verifyQueenActions();
         }
@@ -103,7 +105,7 @@ public class COSC322Test extends GamePlayer {
             ArrayList<Integer> queenPos = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_CURR);
             ArrayList<Integer> queenTargetPos = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_NEXT);
             ArrayList<Integer> arrowPos = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.ARROW_POS);
-            
+            System.out.println();
             System.out.println("\nOpponent move:");
             System.out.println("  Queen from: " + queenPos);
             System.out.println("  Queen to: " + queenTargetPos);
@@ -134,7 +136,6 @@ public class COSC322Test extends GamePlayer {
             System.out.println("Game state is null, cannot verify queen actions");
             return;
         }
-        
         System.out.println("\n=== STEP 1 VERIFICATION: Queen Actions ===");
         
         // 1. Find all queens

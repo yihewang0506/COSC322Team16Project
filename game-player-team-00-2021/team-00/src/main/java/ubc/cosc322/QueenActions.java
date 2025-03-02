@@ -1,6 +1,7 @@
 package ubc.cosc322;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -10,13 +11,11 @@ public class QueenActions {
     
     // Board dimensions
     public static final int BOARD_SIZE = 10;
-    
     // Piece types in the game state
     public static final int EMPTY = 0;
     public static final int WHITE_QUEEN = 1;
     public static final int BLACK_QUEEN = 2;
     public static final int ARROW = 3;
-    
     // Direction vectors for queen movement (8 directions)
     private static final int[][] DIRECTIONS = {
         {-1, 0},  // Up
@@ -27,6 +26,7 @@ public class QueenActions {
         {-1, 1},  // Up-Right
         {1, -1},  // Down-Left
         {1, 1}    // Down-Right
+
     };
     
     /**
@@ -39,7 +39,6 @@ public class QueenActions {
      */
     public static List<int[]> getQueenMoves(ArrayList<Integer> gameState, int row, int col) {
         List<int[]> validMoves = new ArrayList<>();
-        
         // Try each of the 8 directions
         for (int[] dir : DIRECTIONS) {
             int r = row;
@@ -51,7 +50,7 @@ public class QueenActions {
                 c += dir[1];
                 
                 // Check if still on board
-                if (r < 1 || r > 10 || c < 1 || c > 10) {
+                if (r < 1 || r > 9 || c < 1 || c > 9) {
                     break;
                 }
                 
@@ -111,7 +110,6 @@ public class QueenActions {
         newState.set(startIndex, EMPTY);
         newState.set(endIndex, queenType);
         newState.set(arrowIndex, ARROW);
-        
         return newState;
     }
     
@@ -161,7 +159,6 @@ public class QueenActions {
                 return true;
             }
         }
-        
         return false;
     }
     
@@ -175,14 +172,12 @@ public class QueenActions {
     public static List<int[]> getQueenPositions(ArrayList<Integer> gameState, boolean isWhite) {
         List<int[]> positions = new ArrayList<>();
         int queenType = isWhite ? WHITE_QUEEN : BLACK_QUEEN;
-        
         for (int i = 0; i < gameState.size(); i++) {
             if (i < gameState.size() && gameState.get(i) == queenType) {
                 int[] pos = indexToRC(i);
                 // Only include positions that are within the valid board range
-                if (pos[0] >= 1 && pos[0] <= 10 && pos[1] >= 1 && pos[1] <= 10) {
                     positions.add(pos);
-                }
+            
             }
         }
         
@@ -198,7 +193,8 @@ public class QueenActions {
      */
     public static int rcToIndex(int row, int col) {
         // Based on analyzing the game state, this is the mapping function
-        return (row - 1) * 10 + col;
+
+        return (row) * 11 + (col);
     }
     
     /**
@@ -208,11 +204,10 @@ public class QueenActions {
      * @return int[] containing {row, col} (1-10)
      */
     public static int[] indexToRC(int index) {
-        int row = ((index - 1) / 10) + 1;
-        int col = ((index - 1) % 10) + 1;
-        if (index % 10 == 0) {
-            row = index / 10;
-            col = 10;
+        int row = (index/ 11);
+        int col = (index% 11);
+        if (row >= 11 || col < 0) {
+            return null;
         }
         return new int[] {row, col};
     }
@@ -248,7 +243,6 @@ public class QueenActions {
             
             System.out.println(" |");
         }
-        
         System.out.println("   ---------------------");
     }
 }
